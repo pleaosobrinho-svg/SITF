@@ -1,25 +1,24 @@
 # SITF — Silence in the Fire
 
-SITF é um FPS 3D original, estilizado em low-poly/blocky, feito com Godot para foco em dispositivos Android.
+Native Unity 6.3 LTS rebuild of the mobile FPS.
 
-## Estado atual do projeto
-- Primeira pessoa 3D
-- Menu principal com seleção de mapa
-- Dois mapas procedurais: Warehouse e Yard
-- Controles desktop e controles touch Android
-- SMG, Rifle e Shotgun
-- Munição, recarga e troca de arma
-- Inimigos com visão, perseguição, busca, ataque e strafe
-- Tiros, tracers, impactos e efeitos de sangue
-- HUD, pontuação, vitória, derrota e reinício
-- Efeitos sonoros básicos gerados em runtime
-- Projeto mantido sem assets externos obrigatórios, para facilitar testes e manter o tamanho baixo
+## Game
+- Landscape-only Android FPS.
+- 6 distinct maps: Warehouse, Office, Yard, Hangar, Metro and Block.
+- 6 weapons: Pistol, SMG, Rifle, Shotgun, DMR and Sniper.
+- Weapon recoil, reload animation, switching animation, ADS and muzzle flash.
+- Four enemy archetypes with patrol, chase, strafe, attack, search and retreat states.
+- Enemy walk animation, hit reaction and death animation.
+- Procedural map geometry: cover, shelves, crates, containers, offices, vehicles, rails, platforms and street props.
+- Compact touch HUD: movement joystick, right-side look, fire, ADS, reload and weapon slots.
+- Procedural sound generation for firing, reload, hit and footsteps.
+- Mobile-focused rendering choices and no paid asset dependency.
 
-## Abrir no Godot
-Abra o diretório do repositório no Godot 4.x. A cena principal é Main.tscn.
+## Build
+Unity Editor version: 6000.3.0f1.
 
-## Direção do projeto
-O objetivo é chegar a um FPS Android completo, original e leve, com controles touch, armas, mapas, IA e efeitos, priorizando desempenho em aparelhos de entrada/intermediários.
+Open the repository root in Unity Hub and run Assets/Scenes/Main.unity.
 
-## Próximas etapas técnicas
-Polimento visual, animações de personagens, áudio dedicado, mais mapas, sistema de partidas, otimização mobile e pipeline automatizado de exportação APK/AAB.
+For Android, use SITF > Build Android APK in the Unity Editor. The GitHub Actions pipeline is prepared for the same build, but it requires a valid UNITY_LICENSE repository secret. An APK is only considered built after that workflow completes successfully.
+
+The previous Godot prototype is superseded by this Unity project.
