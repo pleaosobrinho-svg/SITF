@@ -1,0 +1,27 @@
+name: SITF Unity Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Android with Unity 6.3 LTS
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: .
+          unityVersion: 6000.3.0f1
+          targetPlatform: Android
+          buildMethod: SITFBuild.BuildAndroid
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SITF-Android-APK
+          path: Build/SITF.apk
+          if-no-files-found: error
+          retention-days: 14
