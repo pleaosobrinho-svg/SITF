@@ -158,7 +158,7 @@ func _attack(distance: float, aim_point: Vector3):
     if distance > 18.0:
         return
 
-    var chance := clamp(0.87 - distance * 0.019, 0.34, 0.82)
+    var chance: float = clampf(0.87 - distance * 0.019, 0.34, 0.82)
     if randf() < chance:
         target.take_damage(8)
 
