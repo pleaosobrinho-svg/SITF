@@ -1,14 +1,19 @@
 name: SITF Unity Android APK
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check Unity license secret
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.UNITY_LICENSE }}" ]; then
+            echo "::error::UNITY_LICENSE is not configured. Add the Unity license file as a GitHub Actions secret before running the Android build."
+            exit 1
+          fi
       - name: Build Android with Unity 6.3 LTS
         uses: game-ci/unity-builder@v4
         env:
