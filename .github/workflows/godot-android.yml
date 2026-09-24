@@ -2,6 +2,10 @@ name: SITF Godot Android APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "GodotProject/**"
+      - ".github/workflows/godot-android.yml"
   push:
     paths:
       - "GodotProject/**"
