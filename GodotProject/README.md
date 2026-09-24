@@ -20,3 +20,6 @@ Run the GitHub Actions workflow named "SITF Godot Android APK", then download th
 Godot 4.7.2 is the current stable 4.7 maintenance release as of September 2026.
 
 CI smoke-test marker: build validation enabled.
+
+
+Mobile UI revision: landscape launch, virtual joystick, touch aim, menu flow, and SITF launcher icon.
