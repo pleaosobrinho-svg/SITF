@@ -806,7 +806,7 @@ func _make_sound(kind: String) -> AudioStreamWAV:
         var tone := sin(TAU * base * t) * 0.55
         var tone2 := sin(TAU * (base * 1.51) * t) * 0.25
         var noise := randf_range(-1.0, 1.0)
-        var value := clamp((tone + tone2 + noise * noise_mix) * env, -1.0, 1.0)
+        var value: float = clampf((tone + tone2 + noise * noise_mix) * env, -1.0, 1.0)
         var q := int(value * 32767.0)
         data.append(q & 255)
         data.append((q >> 8) & 255)
