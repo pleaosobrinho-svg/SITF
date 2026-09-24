@@ -185,6 +185,7 @@ func _build_menu_preview():
 
     var camera_preview := Camera3D.new()
     camera_preview.position = Vector3(5.8, 2.7, 7.4)
+    camera_preview.current = true
     camera_preview.fov = 42.0
     camera_preview.look_at(Vector3(1.2, 1.25, 0.0), Vector3.UP)
     menu_preview_root.add_child(camera_preview)
