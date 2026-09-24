@@ -10,6 +10,9 @@ var world := Node3D.new()
 var ui := CanvasLayer.new()
 var menu_panel
 var hud_panel
+var map_select_panel
+var settings_panel
+var menu_preview_root
 var map_id := 0
 var match_over := false
 var score := 0
@@ -37,6 +40,11 @@ var damage_flash: ColorRect
 var weapon_root: Node3D
 var weapon_model: Node3D
 var look_area: Control
+var joystick_base: Control
+var joystick_knob: Control
+var joystick_touch_id := -1
+var virtual_move := Vector2.ZERO
+var touch_sensitivity := 0.11
 
 var sound_players: Array[AudioStreamPlayer] = []
 var sound_cursor := 0
@@ -71,6 +79,7 @@ func _process(delta):
     if match_over or player == null:
         return
 
+    _update_virtual_move_actions()
     match_time += delta
     fire_timer = maxf(0.0, fire_timer - delta)
     weapon_kick = lerpf(weapon_kick, 0.0, delta * 13.0)
@@ -108,54 +117,270 @@ func _build_menu():
     bg.bg_color = Color("#07090e")
     menu_panel.add_theme_stylebox_override("panel", bg)
     ui.add_child(menu_panel)
+    _build_menu_preview()
+
+    var logo := TextureRect.new()
+    var logo_tex := load("res://icon.svg")
+    if logo_tex:
+        logo.texture = logo_tex
+    logo.position = Vector2(92, 72)
+    logo.size = Vector2(260, 260)
+    logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    menu_panel.add_child(logo)
 
     var title := Label.new()
-    title.text = "SITF"
-    title.position = Vector2(92, 68)
-    title.add_theme_font_size_override("font_size", 92)
+    title.text = "SILENCE IN THE FIRE"
+    title.position = Vector2(96, 345)
+    title.add_theme_font_size_override("font_size", 30)
     title.add_theme_color_override("font_color", Color("#e9edf3"))
     menu_panel.add_child(title)
 
-    var sub := Label.new()
-    sub.text = "SILENCE IN THE FIRE"
-    sub.position = Vector2(98, 164)
-    sub.add_theme_font_size_override("font_size", 23)
-    sub.add_theme_color_override("font_color", Color("#8b96a6"))
-    menu_panel.add_child(sub)
+    var subtitle := Label.new()
+    subtitle.text = "FIRST-PERSON COMBAT"
+    subtitle.position = Vector2(98, 387)
+    subtitle.add_theme_font_size_override("font_size", 15)
+    subtitle.add_theme_color_override("font_color", Color("#7f8b9a"))
+    menu_panel.add_child(subtitle)
 
-    var info := Label.new()
-    info.text = "SELECT DEPLOYMENT"
-    info.position = Vector2(100, 236)
-    info.add_theme_font_size_override("font_size", 18)
-    info.add_theme_color_override("font_color", Color("#d27638"))
-    menu_panel.add_child(info)
+    var play := Button.new()
+    play.text = "PLAY"
+    play.position = Vector2(96, 485)
+    play.size = Vector2(390, 82)
+    play.add_theme_font_size_override("font_size", 30)
+    play.add_theme_stylebox_override("normal", _button_style(Color("#d34b24"), Color("#ffb06b")))
+    play.add_theme_stylebox_override("hover", _button_style(Color("#ed5b2d"), Color("#ffd0a5")))
+    play.add_theme_stylebox_override("pressed", _button_style(Color("#9f3218"), Color("#ffd0a5")))
+    play.pressed.connect(_show_map_select)
+    menu_panel.add_child(play)
+
+    var settings := Button.new()
+    settings.text = "SETTINGS"
+    settings.position = Vector2(96, 580)
+    settings.size = Vector2(390, 62)
+    settings.add_theme_font_size_override("font_size", 21)
+    settings.add_theme_stylebox_override("normal", _button_style(Color("#141a22"), Color("#526070")))
+    settings.add_theme_stylebox_override("hover", _button_style(Color("#1e2732"), Color("#d27638")))
+    settings.pressed.connect(_show_settings)
+    menu_panel.add_child(settings)
+
+    var hint := Label.new()
+    hint.text = "MOBILE READY  •  VIRTUAL JOYSTICK + TOUCH AIM"
+    hint.position = Vector2(98, 680)
+    hint.add_theme_font_size_override("font_size", 14)
+    hint.add_theme_color_override("font_color", Color("#667384"))
+    menu_panel.add_child(hint)
+
+    var version := Label.new()
+    version.text = "SITF  //  v0.2"
+    version.position = Vector2(1730, 1010)
+    version.add_theme_font_size_override("font_size", 14)
+    version.add_theme_color_override("font_color", Color("#586372"))
+    menu_panel.add_child(version)
+
+func _build_menu_preview():
+    menu_preview_root = Node3D.new()
+    menu_preview_root.name = "MenuPreview"
+    world.add_child(menu_preview_root)
+
+    var camera_preview := Camera3D.new()
+    camera_preview.position = Vector3(5.8, 2.7, 7.4)
+    camera_preview.fov = 42.0
+    camera_preview.look_at(Vector3(1.2, 1.25, 0.0), Vector3.UP)
+    menu_preview_root.add_child(camera_preview)
+
+    var floor := MeshInstance3D.new()
+    var floor_mesh := BoxMesh.new()
+    floor_mesh.size = Vector3(13, 0.25, 9)
+    floor.mesh = floor_mesh
+    floor.position = Vector3(1.0, -0.15, 0.0)
+    floor.material_override = _mat(Color("#171d25"), 0.05, 0.9)
+    menu_preview_root.add_child(floor)
+
+    var glow := OmniLight3D.new()
+    glow.position = Vector3(1.5, 4.0, 2.0)
+    glow.omni_range = 12.0
+    glow.light_energy = 5.0
+    glow.light_color = Color("#d27638")
+    menu_preview_root.add_child(glow)
+
+    var rim := OmniLight3D.new()
+    rim.position = Vector3(-3.5, 2.8, -3.0)
+    rim.omni_range = 10.0
+    rim.light_energy = 4.0
+    rim.light_color = Color("#557da6")
+    menu_preview_root.add_child(rim)
+
+    var hero := Node3D.new()
+    hero.position = Vector3(1.2, 0.0, 0.0)
+    menu_preview_root.add_child(hero)
+
+    var torso := MeshInstance3D.new()
+    var torso_mesh := BoxMesh.new()
+    torso_mesh.size = Vector3(0.85, 1.15, 0.48)
+    torso.mesh = torso_mesh
+    torso.position = Vector3(0, 1.35, 0)
+    torso.material_override = _mat(Color("#242d37"), 0.15, 0.65)
+    hero.add_child(torso)
+
+    var vest := MeshInstance3D.new()
+    var vest_mesh := BoxMesh.new()
+    vest_mesh.size = Vector3(0.94, 0.72, 0.12)
+    vest.mesh = vest_mesh
+    vest.position = Vector3(0, 1.42, -0.27)
+    vest.material_override = _mat(Color("#3b4652"), 0.1, 0.72)
+    hero.add_child(vest)
+
+    var head := MeshInstance3D.new()
+    var head_mesh := BoxMesh.new()
+    head_mesh.size = Vector3(0.55, 0.55, 0.55)
+    head.mesh = head_mesh
+    head.position = Vector3(0, 2.25, 0)
+    head.material_override = _mat(Color("#b66e52"), 0.0, 0.9)
+    hero.add_child(head)
+
+    var helmet := MeshInstance3D.new()
+    var helmet_mesh := BoxMesh.new()
+    helmet_mesh.size = Vector3(0.64, 0.20, 0.62)
+    helmet.mesh = helmet_mesh
+    helmet.position = Vector3(0, 2.53, 0)
+    helmet.material_override = _mat(Color("#11171e"), 0.2, 0.5)
+    hero.add_child(helmet)
+
+    for side in [-1.0, 1.0]:
+        var arm := MeshInstance3D.new()
+        var arm_mesh := BoxMesh.new()
+        arm_mesh.size = Vector3(0.22, 0.92, 0.25)
+        arm.mesh = arm_mesh
+        arm.position = Vector3(side * 0.60, 1.42, -0.02)
+        arm.rotation_degrees.z = side * -9.0
+        arm.material_override = _mat(Color("#2c3742"), 0.1, 0.72)
+        hero.add_child(arm)
+
+        var leg := MeshInstance3D.new()
+        var leg_mesh := BoxMesh.new()
+        leg_mesh.size = Vector3(0.28, 1.05, 0.30)
+        leg.mesh = leg_mesh
+        leg.position = Vector3(side * 0.23, 0.52, 0)
+        leg.material_override = _mat(Color("#202832"), 0.1, 0.78)
+        hero.add_child(leg)
+
+    var rifle := MeshInstance3D.new()
+    var rifle_mesh := BoxMesh.new()
+    rifle_mesh.size = Vector3(0.14, 0.16, 1.55)
+    rifle.mesh = rifle_mesh
+    rifle.position = Vector3(0.42, 1.30, -0.62)
+    rifle.rotation_degrees.x = -8.0
+    rifle.rotation_degrees.z = -12.0
+    rifle.material_override = _mat(Color("#111419"), 0.35, 0.45)
+    hero.add_child(rifle)
+
+    var light := DirectionalLight3D.new()
+    light.rotation_degrees = Vector3(-35, -130, 0)
+    light.light_energy = 1.1
+    light.shadow_enabled = true
+    menu_preview_root.add_child(light)
+
+func _show_map_select():
+    menu_panel.visible = false
+    map_select_panel = Panel.new()
+    map_select_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    var bg := StyleBoxFlat.new()
+    bg.bg_color = Color("#080b10")
+    map_select_panel.add_theme_stylebox_override("panel", bg)
+    ui.add_child(map_select_panel)
+
+    var title := Label.new()
+    title.text = "SELECT MAP"
+    title.position = Vector2(92, 72)
+    title.add_theme_font_size_override("font_size", 46)
+    title.add_theme_color_override("font_color", Color("#edf1f5"))
+    map_select_panel.add_child(title)
+
+    var sub := Label.new()
+    sub.text = "CHOOSE YOUR DEPLOYMENT"
+    sub.position = Vector2(96, 130)
+    sub.add_theme_font_size_override("font_size", 17)
+    sub.add_theme_color_override("font_color", Color("#7f8b9a"))
+    map_select_panel.add_child(sub)
 
     for i in range(maps.size()):
         var b := Button.new()
         b.text = "%02d   %s" % [i + 1, maps[i].name]
-        b.position = Vector2(92, 280 + i * 72)
-        b.size = Vector2(370, 58)
-        b.add_theme_font_size_override("font_size", 20)
-        b.add_theme_color_override("font_color", Color("#e2e7ed"))
-        b.add_theme_stylebox_override("normal", _button_style(Color("#141a22"), Color("#2c3745")))
-        b.add_theme_stylebox_override("hover", _button_style(Color("#1c2632"), Color("#d27638")))
-        b.add_theme_stylebox_override("pressed", _button_style(Color("#253244"), Color("#e6d3bf")))
+        b.position = Vector2(92 + (i / 3) * 470, 205 + (i % 3) * 150)
+        b.size = Vector2(420, 112)
+        b.add_theme_font_size_override("font_size", 25)
+        b.add_theme_stylebox_override("normal", _button_style(Color("#141a22"), maps[i].accent))
+        b.add_theme_stylebox_override("hover", _button_style(Color("#202a35"), maps[i].accent.lightened(0.2)))
         b.pressed.connect(func(i=i): _start_match(i))
-        menu_panel.add_child(b)
+        map_select_panel.add_child(b)
 
-    var desc := Label.new()
-    desc.text = "6 WEAPONS  •  MULTIPLE ENEMY ARCHETYPES  •  FIRST-PERSON 3D"
-    desc.position = Vector2(94, 740)
-    desc.add_theme_font_size_override("font_size", 16)
-    desc.add_theme_color_override("font_color", Color("#667384"))
-    menu_panel.add_child(desc)
+    var back := Button.new()
+    back.text = "BACK"
+    back.position = Vector2(92, 885)
+    back.size = Vector2(210, 60)
+    back.add_theme_font_size_override("font_size", 20)
+    back.add_theme_stylebox_override("normal", _button_style(Color("#11161d"), Color("#566375")))
+    back.pressed.connect(func():
+        map_select_panel.queue_free()
+        map_select_panel = null
+        menu_panel.visible = true
+    )
+    map_select_panel.add_child(back)
 
-    var how := Label.new()
-    how.text = "MOBILE: left buttons move  /  right side aims  /  FIRE shoots\nDESKTOP: WASD + mouse  /  R reload  /  1–6 weapon"
-    how.position = Vector2(740, 680)
-    how.add_theme_font_size_override("font_size", 18)
-    how.add_theme_color_override("font_color", Color("#8f9bac"))
-    menu_panel.add_child(how)
+func _show_settings():
+    settings_panel = Panel.new()
+    settings_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    var bg := StyleBoxFlat.new()
+    bg.bg_color = Color(0.02, 0.025, 0.04, 0.96)
+    settings_panel.add_theme_stylebox_override("panel", bg)
+    ui.add_child(settings_panel)
+
+    var title := Label.new()
+    title.text = "SETTINGS"
+    title.position = Vector2(0, 170)
+    title.size = Vector2(1920, 70)
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 42)
+    title.add_theme_color_override("font_color", Color("#edf1f5"))
+    settings_panel.add_child(title)
+
+    var sens := Label.new()
+    sens.text = "TOUCH LOOK SENSITIVITY"
+    sens.position = Vector2(0, 290)
+    sens.size = Vector2(1920, 40)
+    sens.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    sens.add_theme_font_size_override("font_size", 20)
+    sens.add_theme_color_override("font_color", Color("#8995a5"))
+    settings_panel.add_child(sens)
+
+    var values := [0.075, 0.11, 0.16]
+    var names := ["LOW", "MEDIUM", "HIGH"]
+    for i in range(3):
+        var b := Button.new()
+        b.text = names[i]
+        b.position = Vector2(690 + i * 190, 350)
+        b.size = Vector2(160, 60)
+        b.add_theme_font_size_override("font_size", 18)
+        b.add_theme_stylebox_override("normal", _button_style(Color("#141a22"), Color("#566375")))
+        b.pressed.connect(func(v=values[i]):
+            touch_sensitivity = v
+            if player:
+                player.touch_sensitivity = v
+        )
+        settings_panel.add_child(b)
+
+    var close := Button.new()
+    close.text = "CLOSE"
+    close.position = Vector2(760, 520)
+    close.size = Vector2(400, 66)
+    close.add_theme_font_size_override("font_size", 22)
+    close.add_theme_stylebox_override("normal", _button_style(Color("#d34b24"), Color("#ffb06b")))
+    close.pressed.connect(func():
+        settings_panel.queue_free()
+        settings_panel = null
+    )
+    settings_panel.add_child(close)
 
 func _button_style(fill: Color, border: Color) -> StyleBoxFlat:
     var s := StyleBoxFlat.new()
@@ -170,6 +395,9 @@ func _button_style(fill: Color, border: Color) -> StyleBoxFlat:
 
 func _start_match(selected: int):
     map_id = selected
+    if map_select_panel:
+        map_select_panel.queue_free()
+        map_select_panel = null
     menu_panel.visible = false
     match_over = false
     score = 0
@@ -188,6 +416,10 @@ func _start_match(selected: int):
     _equip(0)
 
 func _clear_world():
+    joystick_touch_id = -1
+    virtual_move = Vector2.ZERO
+    for action in ["move_forward", "move_back", "move_left", "move_right", "fire"]:
+        Input.action_release(action)
     for n in world.get_children():
         n.queue_free()
     for n in ui.get_children():
@@ -197,6 +429,7 @@ func _clear_world():
     camera = null
     weapon_root = null
     hud_panel = null
+    menu_preview_root = null
 
 func _build_environment():
     var data = maps[map_id]
@@ -313,6 +546,7 @@ func _spawn_player():
     player.position = Vector3(0, 0.4, 0)
     world.add_child(player)
     player.game = self
+    player.touch_sensitivity = touch_sensitivity
 
 func _spawn_enemies():
     var spawn_points := [
@@ -383,25 +617,44 @@ func _build_hud():
     _build_touch_controls()
 
 func _build_touch_controls():
-    var move_size := Vector2(78, 58)
-    var labels := [
-        ["W", Vector2(120, 745), "move_forward"],
-        ["A", Vector2(35, 805), "move_left"],
-        ["S", Vector2(120, 805), "move_back"],
-        ["D", Vector2(205, 805), "move_right"]
-    ]
-    for item in labels:
-        _add_hold_button(item[0], item[1], move_size, item[2])
+    var hint := Label.new()
+    hint.text = "MOVE"
+    hint.position = Vector2(58, 676)
+    hint.add_theme_font_size_override("font_size", 14)
+    hint.add_theme_color_override("font_color", Color(0.85,0.88,0.92,0.65))
+    hud_panel.add_child(hint)
 
-    _add_hold_button("FIRE", Vector2(1640, 735), Vector2(190, 100), "fire")
-    _add_action_button("ADS", Vector2(1460, 760), Vector2(120, 64), "ads_toggle")
-    _add_action_button("RELOAD", Vector2(1460, 835), Vector2(135, 56), "reload")
-    _add_action_button("JUMP", Vector2(1810, 830), Vector2(90, 56), "jump")
-    _add_action_button("NEXT", Vector2(1770, 735), Vector2(110, 56), "next_weapon")
+    joystick_base = Panel.new()
+    joystick_base.position = Vector2(38, 700)
+    joystick_base.size = Vector2(210, 210)
+    joystick_base.mouse_filter = Control.MOUSE_FILTER_STOP
+    joystick_base.add_theme_stylebox_override("panel", _button_style(Color(0.05,0.07,0.10,0.52), Color("#718096")))
+    joystick_base.gui_input.connect(_on_joystick_input)
+    hud_panel.add_child(joystick_base)
+
+    joystick_knob = Panel.new()
+    joystick_knob.position = Vector2(65, 65)
+    joystick_knob.size = Vector2(80, 80)
+    joystick_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    joystick_knob.add_theme_stylebox_override("panel", _button_style(Color(0.20,0.25,0.31,0.88), Color("#d27638")))
+    joystick_base.add_child(joystick_knob)
+
+    _add_hold_button("FIRE", Vector2(1635, 785), Vector2(205, 115), "fire")
+    _add_action_button("ADS", Vector2(1450, 790), Vector2(135, 62), "ads_toggle")
+    _add_action_button("RELOAD", Vector2(1450, 865), Vector2(150, 58), "reload")
+    _add_action_button("JUMP", Vector2(1815, 875), Vector2(80, 58), "jump")
+    _add_action_button("NEXT", Vector2(1760, 790), Vector2(125, 62), "next_weapon")
+
+    var look_label := Label.new()
+    look_label.text = "DRAG TO AIM"
+    look_label.position = Vector2(790, 40)
+    look_label.add_theme_font_size_override("font_size", 14)
+    look_label.add_theme_color_override("font_color", Color(0.85,0.88,0.92,0.38))
+    hud_panel.add_child(look_label)
 
     look_area = Control.new()
-    look_area.position = Vector2(920, 110)
-    look_area.size = Vector2(940, 590)
+    look_area.position = Vector2(720, 80)
+    look_area.size = Vector2(1160, 650)
     look_area.mouse_filter = Control.MOUSE_FILTER_STOP
     look_area.gui_input.connect(_on_look_input)
     hud_panel.add_child(look_area)
@@ -411,10 +664,10 @@ func _add_hold_button(text_value: String, pos: Vector2, size: Vector2, action: S
     b.text = text_value
     b.position = pos
     b.size = size
-    b.add_theme_font_size_override("font_size", 19)
-    b.modulate.a = 0.76
-    b.add_theme_stylebox_override("normal", _button_style(Color(0.05,0.07,0.1,0.68), Color("#6e7d8f")))
-    b.add_theme_stylebox_override("pressed", _button_style(Color(0.22,0.28,0.35,0.88), Color("#d27638")))
+    b.add_theme_font_size_override("font_size", 22 if action == "fire" else 19)
+    b.modulate.a = 0.82
+    b.add_theme_stylebox_override("normal", _button_style(Color(0.05,0.07,0.1,0.70), Color("#718096")))
+    b.add_theme_stylebox_override("pressed", _button_style(Color(0.24,0.10,0.06,0.92), Color("#ffb06b")))
     b.button_down.connect(func(): Input.action_press(action))
     b.button_up.connect(func(): Input.action_release(action))
     hud_panel.add_child(b)
@@ -425,9 +678,9 @@ func _add_action_button(text_value: String, pos: Vector2, size: Vector2, action:
     b.position = pos
     b.size = size
     b.add_theme_font_size_override("font_size", 17)
-    b.modulate.a = 0.76
-    b.add_theme_stylebox_override("normal", _button_style(Color(0.05,0.07,0.1,0.68), Color("#6e7d8f")))
-    b.add_theme_stylebox_override("pressed", _button_style(Color(0.22,0.28,0.35,0.88), Color("#d27638")))
+    b.modulate.a = 0.82
+    b.add_theme_stylebox_override("normal", _button_style(Color(0.05,0.07,0.1,0.70), Color("#718096")))
+    b.add_theme_stylebox_override("pressed", _button_style(Color(0.24,0.10,0.06,0.92), Color("#ffb06b")))
     if action == "next_weapon":
         b.pressed.connect(func(): _equip((weapon_index + 1) % weapons.size()))
     elif action == "ads_toggle":
@@ -443,24 +696,37 @@ func _add_action_button(text_value: String, pos: Vector2, size: Vector2, action:
         )
     hud_panel.add_child(b)
 
-func _on_look_input(event):
+func _on_joystick_input(event):
     if event is InputEventScreenTouch:
         if event.pressed:
-            look_area.set_meta("touch_id", event.index)
-            look_area.set_meta("last_pos", event.position)
-        else:
-            if look_area.has_meta("touch_id") and int(look_area.get_meta("touch_id")) == event.index:
-                look_area.set_meta("touch_id", -1)
-    elif event is InputEventScreenDrag:
-        if not look_area.has_meta("touch_id"):
-            return
-        if int(look_area.get_meta("touch_id")) != event.index:
-            return
-        var last: Vector2 = look_area.get_meta("last_pos")
-        var delta: Vector2 = event.position - last
-        look_area.set_meta("last_pos", event.position)
-        if player:
-            player.add_touch_look(delta)
+            joystick_touch_id = event.index
+            _set_virtual_move(event.position)
+        elif event.index == joystick_touch_id:
+            joystick_touch_id = -1
+            virtual_move = Vector2.ZERO
+            joystick_knob.position = Vector2(65, 65)
+    elif event is InputEventScreenDrag and event.index == joystick_touch_id:
+        _set_virtual_move(event.position)
+
+func _set_virtual_move(local_pos: Vector2):
+    var center := Vector2(105, 105)
+    var delta := local_pos - center
+    if delta.length() > 88.0:
+        delta = delta.normalized() * 88.0
+    virtual_move = delta / 88.0
+    joystick_knob.position = center + delta - Vector2(40, 40)
+
+func _update_virtual_move_actions():
+    for action in ["move_forward", "move_back", "move_left", "move_right"]:
+        Input.action_release(action)
+    if virtual_move.y < -0.25:
+        Input.action_press("move_forward")
+    if virtual_move.y > 0.25:
+        Input.action_press("move_back")
+    if virtual_move.x < -0.25:
+        Input.action_press("move_left")
+    if virtual_move.x > 0.25:
+        Input.action_press("move_right")
 
 func _try_fire():
     if ammo <= 0:
@@ -755,10 +1021,14 @@ func _game_over(victory: bool):
     back.pressed.connect(func():
         overlay.queue_free()
         match_over = false
-        _clear_world()
-        menu_panel.visible = true
+        _return_to_main_menu()
     )
     overlay.add_child(back)
+
+func _return_to_main_menu():
+    _clear_world()
+    menu_panel.visible = true
+    _build_menu_preview()
 
 func _build_audio():
     for i in range(8):
