@@ -1,4 +1,5 @@
 extends CharacterBody3D
+@warning_ignore_start("inferred_declaration")
 
 var game
 var archetype := "Assault"
@@ -146,10 +147,10 @@ func _physics_process(delta):
 
     cooldown -= delta
     wander_timer -= delta
-    var to_player := player.global_position - global_position
+    var to_player: Vector3 = player.global_position - global_position
     to_player.y = 0
-    var dist := to_player.length()
-    var has_los := game.enemy_has_los(self)
+    var dist: float = to_player.length()
+    var has_los: bool = game.enemy_has_los(self)
 
     if wander_timer <= 0.0 or wander_target.distance_to(global_position) < 1.8:
         wander_timer = randf_range(2.5, 5.0)
@@ -160,7 +161,7 @@ func _physics_process(delta):
     var desired := Vector3.ZERO
 
     if dist < attack_range and has_los:
-        var face := to_player.normalized()
+        var face: Vector3 = to_player.normalized()
         global_rotation.y = lerp_angle(global_rotation.y, atan2(-face.x, -face.z), delta * 5.0)
         if archetype == "Marksman":
             desired = face * (0.18 if dist > 16.0 else -0.55)
@@ -177,7 +178,7 @@ func _physics_process(delta):
         desired = face
         global_rotation.y = lerp_angle(global_rotation.y, atan2(-face.x, -face.z), delta * 3.5)
     else:
-        var wander := wander_target - global_position
+        var wander: Vector3 = wander_target - global_position
         wander.y = 0
         if wander.length() > 0.2:
             desired = wander.normalized()
@@ -193,3 +194,5 @@ func _physics_process(delta):
 
     if global_position.y < -7:
         queue_free()
+
+@warning_ignore_restore("inferred_declaration")

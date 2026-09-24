@@ -26,7 +26,9 @@ jobs:
           java-version: "17"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       - name: Install Android components
         run: |
@@ -45,7 +47,10 @@ jobs:
         run: |
           mkdir -p "$HOME/.local/share/godot/export_templates/4.7.2.stable"
           wget -q 'https://downloads.godotengine.org/?version=4.7.2&flavor=stable&platform=templates&slug=export_templates.tpz' -O /tmp/templates.tpz
-          unzip -q /tmp/templates.tpz -d "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          rm -rf /tmp/godot_templates
+          mkdir -p /tmp/godot_templates "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot_templates
+          cp -R /tmp/godot_templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
 
       - name: Configure Godot Android paths
         run: |

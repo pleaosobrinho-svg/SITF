@@ -1,4 +1,5 @@
 extends Node3D
+@warning_ignore_start("inferred_declaration")
 
 const PLAYER_SCRIPT = preload("res://scripts/player.gd")
 const ENEMY_SCRIPT = preload("res://scripts/enemy.gd")
@@ -456,7 +457,7 @@ func _on_look_input(event):
         if int(look_area.get_meta("touch_id")) != event.index:
             return
         var last: Vector2 = look_area.get_meta("last_pos")
-        var delta := event.position - last
+        var delta: Vector2 = event.position - last
         look_area.set_meta("last_pos", event.position)
         if player:
             player.add_touch_look(delta)
@@ -472,16 +473,16 @@ func _try_fire():
     muzzle_flash_left = 0.065
     _play_sound("shot")
 
-    var origin := camera.global_position
+    var origin: Vector3 = camera.global_position
     var center := get_viewport().get_visible_rect().size * 0.5
-    var dir := camera.project_ray_normal(center)
+    var dir: Vector3 = camera.project_ray_normal(center)
     for pellet in range(int(w.pellets)):
         var spread := Vector3(randfn(0.0, float(w.spread)), randfn(0.0, float(w.spread)), randfn(0.0, float(w.spread)))
-        var final_dir := (dir + spread).normalized()
+        var final_dir: Vector3 = (dir + spread).normalized()
         var query := PhysicsRayQueryParameters3D.create(origin, origin + final_dir * float(w.range))
         query.exclude = [player]
         var hit := get_world_3d().direct_space_state.intersect_ray(query)
-        var end_point := origin + final_dir * float(w.range)
+        var end_point: Vector3 = origin + final_dir * float(w.range)
         if not hit.is_empty():
             end_point = hit.position
             var collider = hit.collider
@@ -671,12 +672,12 @@ func player_damage(amount: float):
 func enemy_shoot(enemy, target):
     if target == null or match_over:
         return
-    var from := enemy.global_position + Vector3(0,1.1,0)
-    var to := target.global_position + Vector3(0,1.45,0)
+    var from: Vector3 = enemy.global_position + Vector3(0,1.1,0)
+    var to: Vector3 = target.global_position + Vector3(0,1.45,0)
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [enemy]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
-    var endpoint := to if hit.is_empty() else hit.position
+    var endpoint: Vector3 = to if hit.is_empty() else hit.position
     var accuracy := 0.78
     if enemy.archetype == "Scout":
         accuracy = 0.56
@@ -691,8 +692,8 @@ func enemy_shoot(enemy, target):
 func enemy_has_los(enemy) -> bool:
     if player == null:
         return false
-    var from := enemy.global_position + Vector3.UP * 1.2
-    var to := player.global_position + Vector3.UP * 1.4
+    var from: Vector3 = enemy.global_position + Vector3.UP * 1.2
+    var to: Vector3 = player.global_position + Vector3.UP * 1.4
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [enemy]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
@@ -805,7 +806,7 @@ func _make_sound(kind: String) -> AudioStreamWAV:
         var tone := sin(TAU * base * t) * 0.55
         var tone2 := sin(TAU * (base * 1.51) * t) * 0.25
         var noise := randf_range(-1.0, 1.0)
-        var value := clamp((tone + tone2 + noise * noise_mix) * env, -1.0, 1.0)
+        var value: float = clampf((tone + tone2 + noise * noise_mix) * env, -1.0, 1.0)
         var q := int(value * 32767.0)
         data.append(q & 255)
         data.append((q >> 8) & 255)
@@ -816,3 +817,5 @@ func _make_sound(kind: String) -> AudioStreamWAV:
     wav.stereo = false
     wav.data = data
     return wav
+
+@warning_ignore_restore("inferred_declaration")

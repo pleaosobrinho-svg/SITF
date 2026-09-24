@@ -18,3 +18,5 @@ Build:
 Run the GitHub Actions workflow named "SITF Godot Android APK", then download the artifact named "SITF-Godot-Android-APK". The artifact contains SITF.apk.
 
 Godot 4.7.2 is the current stable 4.7 maintenance release as of September 2026.
+
+CI smoke-test marker: build validation enabled.
