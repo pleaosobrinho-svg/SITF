@@ -23,3 +23,5 @@ CI smoke-test marker: build validation enabled.
 
 
 Mobile UI revision: landscape launch, virtual joystick, touch aim, menu flow, and SITF launcher icon.
+
+Loading screen and strict script validation added.
