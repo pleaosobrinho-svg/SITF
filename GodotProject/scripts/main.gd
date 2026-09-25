@@ -117,7 +117,7 @@ func _build_menu():
     bg.bg_color = Color("#07090e")
     menu_panel.add_theme_stylebox_override("panel", bg)
     ui.add_child(menu_panel)
-    _build_menu_preview()
+    _build_menu_character_ui()
 
     var logo := TextureRect.new()
     var logo_tex := load("res://icon.svg")
@@ -130,7 +130,7 @@ func _build_menu():
     menu_panel.add_child(logo)
 
     var title := Label.new()
-    title.text = "SILENCE IN THE FIRE"
+    title.text = "SITF"
     title.position = Vector2(96, 345)
     title.add_theme_font_size_override("font_size", 30)
     title.add_theme_color_override("font_color", Color("#e9edf3"))
@@ -172,115 +172,100 @@ func _build_menu():
     menu_panel.add_child(hint)
 
     var version := Label.new()
-    version.text = "SITF  //  v0.2"
+    version.text = "SITF"
     version.position = Vector2(1730, 1010)
     version.add_theme_font_size_override("font_size", 14)
     version.add_theme_color_override("font_color", Color("#586372"))
     menu_panel.add_child(version)
 
-func _build_menu_preview():
-    menu_preview_root = Node3D.new()
-    menu_preview_root.name = "MenuPreview"
-    world.add_child(menu_preview_root)
+func _build_menu_character_ui():
+    var panel := Panel.new()
+    panel.position = Vector2(850, 105)
+    panel.size = Vector2(900, 760)
+    panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    panel.add_theme_stylebox_override("panel", _button_style(Color(0.025,0.035,0.05,0.78), Color("#303b49")))
+    menu_panel.add_child(panel)
 
-    var camera_preview := Camera3D.new()
-    camera_preview.position = Vector3(5.8, 2.7, 7.4)
-    camera_preview.current = true
-    camera_preview.fov = 42.0
-    camera_preview.look_at(Vector3(1.2, 1.25, 0.0), Vector3.UP)
-    menu_preview_root.add_child(camera_preview)
+    var label := Label.new()
+    label.text = "OPERATOR"
+    label.position = Vector2(32, 26)
+    label.add_theme_font_size_override("font_size", 16)
+    label.add_theme_color_override("font_color", Color("#7f8b9a"))
+    panel.add_child(label)
 
-    var floor := MeshInstance3D.new()
-    var floor_mesh := BoxMesh.new()
-    floor_mesh.size = Vector3(13, 0.25, 9)
-    floor.mesh = floor_mesh
-    floor.position = Vector3(1.0, -0.15, 0.0)
-    floor.material_override = _mat(Color("#171d25"), 0.05, 0.9)
-    menu_preview_root.add_child(floor)
+    var shadow := Panel.new()
+    shadow.position = Vector2(322, 630)
+    shadow.size = Vector2(260, 30)
+    shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    shadow.add_theme_stylebox_override("panel", _button_style(Color(0.0,0.0,0.0,0.35), Color(0.0,0.0,0.0,0.0)))
+    panel.add_child(shadow)
 
-    var glow := OmniLight3D.new()
-    glow.position = Vector3(1.5, 4.0, 2.0)
-    glow.omni_range = 12.0
-    glow.light_energy = 5.0
-    glow.light_color = Color("#d27638")
-    menu_preview_root.add_child(glow)
+    var body := Panel.new()
+    body.position = Vector2(380, 280)
+    body.size = Vector2(150, 230)
+    body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    body.add_theme_stylebox_override("panel", _button_style(Color("#252e38"), Color("#596574")))
+    panel.add_child(body)
 
-    var rim := OmniLight3D.new()
-    rim.position = Vector3(-3.5, 2.8, -3.0)
-    rim.omni_range = 10.0
-    rim.light_energy = 4.0
-    rim.light_color = Color("#557da6")
-    menu_preview_root.add_child(rim)
+    var vest := Panel.new()
+    vest.position = Vector2(365, 330)
+    vest.size = Vector2(180, 125)
+    vest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    vest.add_theme_stylebox_override("panel", _button_style(Color("#3c4855"), Color("#7a8794")))
+    panel.add_child(vest)
 
-    var hero := Node3D.new()
-    hero.position = Vector3(1.2, 0.0, 0.0)
-    menu_preview_root.add_child(hero)
+    var head := Panel.new()
+    head.position = Vector2(407, 170)
+    head.size = Vector2(96, 96)
+    head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    head.add_theme_stylebox_override("panel", _button_style(Color("#b66e52"), Color("#6d4033")))
+    panel.add_child(head)
 
-    var torso := MeshInstance3D.new()
-    var torso_mesh := BoxMesh.new()
-    torso_mesh.size = Vector3(0.85, 1.15, 0.48)
-    torso.mesh = torso_mesh
-    torso.position = Vector3(0, 1.35, 0)
-    torso.material_override = _mat(Color("#242d37"), 0.15, 0.65)
-    hero.add_child(torso)
+    var helmet := Panel.new()
+    helmet.position = Vector2(395, 150)
+    helmet.size = Vector2(120, 38)
+    helmet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    helmet.add_theme_stylebox_override("panel", _button_style(Color("#11171e"), Color("#596574")))
+    panel.add_child(helmet)
 
-    var vest := MeshInstance3D.new()
-    var vest_mesh := BoxMesh.new()
-    vest_mesh.size = Vector3(0.94, 0.72, 0.12)
-    vest.mesh = vest_mesh
-    vest.position = Vector3(0, 1.42, -0.27)
-    vest.material_override = _mat(Color("#3b4652"), 0.1, 0.72)
-    hero.add_child(vest)
+    for side in [-1, 1]:
+        var arm := Panel.new()
+        arm.position = Vector2(330 if side < 0 else 530, 335)
+        arm.size = Vector2(42, 175)
+        arm.rotation = deg_to_rad(-8.0 * side)
+        arm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        arm.add_theme_stylebox_override("panel", _button_style(Color("#303b46"), Color("#667381")))
+        panel.add_child(arm)
 
-    var head := MeshInstance3D.new()
-    var head_mesh := BoxMesh.new()
-    head_mesh.size = Vector3(0.55, 0.55, 0.55)
-    head.mesh = head_mesh
-    head.position = Vector3(0, 2.25, 0)
-    head.material_override = _mat(Color("#b66e52"), 0.0, 0.9)
-    hero.add_child(head)
+        var leg := Panel.new()
+        leg.position = Vector2(390 if side < 0 else 478, 505)
+        leg.size = Vector2(58, 145)
+        leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        leg.add_theme_stylebox_override("panel", _button_style(Color("#1e2730"), Color("#4c5865")))
+        panel.add_child(leg)
 
-    var helmet := MeshInstance3D.new()
-    var helmet_mesh := BoxMesh.new()
-    helmet_mesh.size = Vector3(0.64, 0.20, 0.62)
-    helmet.mesh = helmet_mesh
-    helmet.position = Vector3(0, 2.53, 0)
-    helmet.material_override = _mat(Color("#11171e"), 0.2, 0.5)
-    hero.add_child(helmet)
+    var rifle := Panel.new()
+    rifle.position = Vector2(500, 385)
+    rifle.size = Vector2(310, 38)
+    rifle.rotation = deg_to_rad(-12.0)
+    rifle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    rifle.add_theme_stylebox_override("panel", _button_style(Color("#0f1318"), Color("#707b87")))
+    panel.add_child(rifle)
 
-    for side in [-1.0, 1.0]:
-        var arm := MeshInstance3D.new()
-        var arm_mesh := BoxMesh.new()
-        arm_mesh.size = Vector3(0.22, 0.92, 0.25)
-        arm.mesh = arm_mesh
-        arm.position = Vector3(side * 0.60, 1.42, -0.02)
-        arm.rotation_degrees.z = side * -9.0
-        arm.material_override = _mat(Color("#2c3742"), 0.1, 0.72)
-        hero.add_child(arm)
+    var muzzle := Panel.new()
+    muzzle.position = Vector2(794, 330)
+    muzzle.size = Vector2(55, 24)
+    muzzle.rotation = deg_to_rad(-12.0)
+    muzzle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    muzzle.add_theme_stylebox_override("panel", _button_style(Color("#d27638"), Color("#ffb06b")))
+    panel.add_child(muzzle)
 
-        var leg := MeshInstance3D.new()
-        var leg_mesh := BoxMesh.new()
-        leg_mesh.size = Vector3(0.28, 1.05, 0.30)
-        leg.mesh = leg_mesh
-        leg.position = Vector3(side * 0.23, 0.52, 0)
-        leg.material_override = _mat(Color("#202832"), 0.1, 0.78)
-        hero.add_child(leg)
-
-    var rifle := MeshInstance3D.new()
-    var rifle_mesh := BoxMesh.new()
-    rifle_mesh.size = Vector3(0.14, 0.16, 1.55)
-    rifle.mesh = rifle_mesh
-    rifle.position = Vector3(0.42, 1.30, -0.62)
-    rifle.rotation_degrees.x = -8.0
-    rifle.rotation_degrees.z = -12.0
-    rifle.material_override = _mat(Color("#111419"), 0.35, 0.45)
-    hero.add_child(rifle)
-
-    var light := DirectionalLight3D.new()
-    light.rotation_degrees = Vector3(-35, -130, 0)
-    light.light_energy = 1.1
-    light.shadow_enabled = true
-    menu_preview_root.add_child(light)
+    var status := Label.new()
+    status.text = "READY\nMOBILE LOADOUT"
+    status.position = Vector2(40, 660)
+    status.add_theme_font_size_override("font_size", 15)
+    status.add_theme_color_override("font_color", Color("#d27638"))
+    panel.add_child(status)
 
 func _show_map_select():
     menu_panel.visible = false
@@ -430,7 +415,6 @@ func _clear_world():
     camera = null
     weapon_root = null
     hud_panel = null
-    menu_preview_root = null
 
 func _build_environment():
     var data = maps[map_id]
@@ -1029,7 +1013,7 @@ func _game_over(victory: bool):
 func _return_to_main_menu():
     _clear_world()
     menu_panel.visible = true
-    _build_menu_preview()
+    _build_menu_character_ui()
 
 func _build_audio():
     for i in range(8):
