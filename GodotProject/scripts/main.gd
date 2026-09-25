@@ -187,6 +187,7 @@ func _process(delta):
     _update_hud()
 
 func _build_menu():
+    # UI v2 mobile menu.
     menu_panel = Panel.new()
     menu_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     var bg := StyleBoxFlat.new()
