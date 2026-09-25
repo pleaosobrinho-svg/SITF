@@ -68,6 +68,7 @@ jobs:
         run: |
           mkdir -p build
           godot --headless --path . --editor --quit
+          timeout 8 godot --headless --path . --quit-after 4
           godot --headless --path . --export-debug "Android" build/SITF.apk
 
       - name: Verify APK
