@@ -67,13 +67,88 @@ var maps := [
     {"name":"BLOCK", "size":Vector2(52,36), "theme":Color("#3b3e44"), "accent":Color("#7d9b5e"), "seed":73}
 ]
 
+var loading_panel
+var loading_status: Label
+var loading_bar: ProgressBar
+
 func _ready():
     randomize()
     Engine.max_fps = 60
     add_child(world)
     add_child(ui)
+    _build_loading_screen()
+    await get_tree().process_frame
+    await get_tree().create_timer(0.35).timeout
     _build_audio()
+    _set_loading(35, "LOADING AUDIO...")
+    await get_tree().process_frame
     _build_menu()
+    _set_loading(75, "BUILDING MENU...")
+    await get_tree().process_frame
+    _set_loading(100, "READY")
+    await get_tree().create_timer(0.20).timeout
+    if loading_panel:
+        loading_panel.queue_free()
+        loading_panel = null
+
+func _build_loading_screen():
+    loading_panel = Panel.new()
+    loading_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    var bg := StyleBoxFlat.new()
+    bg.bg_color = Color("#080b10")
+    loading_panel.add_theme_stylebox_override("panel", bg)
+    ui.add_child(loading_panel)
+
+    var logo := TextureRect.new()
+    var tex = load("res://icon.svg")
+    if tex:
+        logo.texture = tex
+    logo.position = Vector2(760, 190)
+    logo.size = Vector2(400, 400)
+    logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    loading_panel.add_child(logo)
+
+    var title := Label.new()
+    title.text = "SITF"
+    title.position = Vector2(0, 625)
+    title.size = Vector2(1920, 60)
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 42)
+    title.add_theme_color_override("font_color", Color("#f0f2f5"))
+    loading_panel.add_child(title)
+
+    loading_status = Label.new()
+    loading_status.text = "INITIALIZING..."
+    loading_status.position = Vector2(0, 695)
+    loading_status.size = Vector2(1920, 35)
+    loading_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    loading_status.add_theme_font_size_override("font_size", 17)
+    loading_status.add_theme_color_override("font_color", Color("#8995a5"))
+    loading_panel.add_child(loading_status)
+
+    loading_bar = ProgressBar.new()
+    loading_bar.position = Vector2(610, 755)
+    loading_bar.size = Vector2(700, 16)
+    loading_bar.min_value = 0
+    loading_bar.max_value = 100
+    loading_bar.value = 10
+    loading_bar.show_percentage = false
+    loading_panel.add_child(loading_bar)
+
+func _set_loading(value: float, status: String):
+    if loading_bar:
+        loading_bar.value = value
+    if loading_status:
+        loading_status.text = status
+
+func _on_look_input(event):
+    if player == null:
+        return
+    if event is InputEventScreenDrag:
+        player.add_touch_look(event.relative)
+    elif event is InputEventMouseMotion:
+        player.add_touch_look(event.relative * 0.55)
 
 func _process(delta):
     if match_over or player == null:
