@@ -14,6 +14,7 @@ var map_select_panel
 var settings_panel
 var menu_preview_root
 var map_id := 0
+var selected_map := 0
 var match_over := false
 var score := 0
 var kills := 0
@@ -189,205 +190,277 @@ func _build_menu():
     menu_panel = Panel.new()
     menu_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     var bg := StyleBoxFlat.new()
-    bg.bg_color = Color("#07090e")
+    bg.bg_color = Color("#070a0f")
     menu_panel.add_theme_stylebox_override("panel", bg)
     ui.add_child(menu_panel)
-    _build_menu_character_ui()
 
-    var logo := TextureRect.new()
-    var logo_tex := load("res://icon.svg")
-    if logo_tex:
-        logo.texture = logo_tex
-    logo.position = Vector2(92, 72)
-    logo.size = Vector2(260, 260)
-    logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-    logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-    menu_panel.add_child(logo)
+    # Subtle accent rails.
+    for x in [0, 1910]:
+        var rail := ColorRect.new()
+        rail.position = Vector2(x, 0)
+        rail.size = Vector2(10, 1080)
+        rail.color = Color("#d34b24")
+        rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        menu_panel.add_child(rail)
+
+    var icon := TextureRect.new()
+    var tex = load("res://icon.svg")
+    if tex:
+        icon.texture = tex
+    icon.position = Vector2(82, 70)
+    icon.size = Vector2(105, 105)
+    icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    menu_panel.add_child(icon)
 
     var title := Label.new()
     title.text = "SITF"
-    title.position = Vector2(96, 345)
-    title.add_theme_font_size_override("font_size", 30)
-    title.add_theme_color_override("font_color", Color("#e9edf3"))
+    title.position = Vector2(210, 72)
+    title.add_theme_font_size_override("font_size", 42)
+    title.add_theme_color_override("font_color", Color("#f2f4f7"))
     menu_panel.add_child(title)
 
-    var subtitle := Label.new()
-    subtitle.text = "FIRST-PERSON COMBAT"
-    subtitle.position = Vector2(98, 387)
-    subtitle.add_theme_font_size_override("font_size", 15)
-    subtitle.add_theme_color_override("font_color", Color("#7f8b9a"))
-    menu_panel.add_child(subtitle)
+    var sub := Label.new()
+    sub.text = "SILENCE IN THE FIRE"
+    sub.position = Vector2(212, 119)
+    sub.add_theme_font_size_override("font_size", 14)
+    sub.add_theme_color_override("font_color", Color("#788493"))
+    menu_panel.add_child(sub)
+
+    var line := ColorRect.new()
+    line.position = Vector2(82, 196)
+    line.size = Vector2(650, 2)
+    line.color = Color("#28313c")
+    line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    menu_panel.add_child(line)
+
+    var section := Label.new()
+    section.text = "MAIN MENU"
+    section.position = Vector2(84, 255)
+    section.add_theme_font_size_override("font_size", 15)
+    section.add_theme_color_override("font_color", Color("#d27638"))
+    menu_panel.add_child(section)
 
     var play := Button.new()
     play.text = "PLAY"
-    play.position = Vector2(96, 485)
-    play.size = Vector2(390, 82)
-    play.add_theme_font_size_override("font_size", 30)
-    play.add_theme_stylebox_override("normal", _button_style(Color("#d34b24"), Color("#ffb06b")))
-    play.add_theme_stylebox_override("hover", _button_style(Color("#ed5b2d"), Color("#ffd0a5")))
-    play.add_theme_stylebox_override("pressed", _button_style(Color("#9f3218"), Color("#ffd0a5")))
+    play.position = Vector2(82, 305)
+    play.size = Vector2(540, 86)
+    play.add_theme_font_size_override("font_size", 28)
+    play.add_theme_stylebox_override("normal", _button_style(Color("#c94321"), Color("#f07a45"), 12))
+    play.add_theme_stylebox_override("hover", _button_style(Color("#e05228"), Color("#ff9a63"), 12))
+    play.add_theme_stylebox_override("pressed", _button_style(Color("#9e3018"), Color("#ffb083"), 12))
     play.pressed.connect(_show_map_select)
     menu_panel.add_child(play)
 
     var settings := Button.new()
     settings.text = "SETTINGS"
-    settings.position = Vector2(96, 580)
-    settings.size = Vector2(390, 62)
-    settings.add_theme_font_size_override("font_size", 21)
-    settings.add_theme_stylebox_override("normal", _button_style(Color("#141a22"), Color("#526070")))
-    settings.add_theme_stylebox_override("hover", _button_style(Color("#1e2732"), Color("#d27638")))
+    settings.position = Vector2(82, 412)
+    settings.size = Vector2(540, 64)
+    settings.add_theme_font_size_override("font_size", 20)
+    settings.add_theme_stylebox_override("normal", _button_style(Color("#111720"), Color("#3c4857"), 12))
+    settings.add_theme_stylebox_override("hover", _button_style(Color("#1a232e"), Color("#d27638"), 12))
     settings.pressed.connect(_show_settings)
     menu_panel.add_child(settings)
 
-    var hint := Label.new()
-    hint.text = "MOBILE READY  •  VIRTUAL JOYSTICK + TOUCH AIM"
-    hint.position = Vector2(98, 680)
-    hint.add_theme_font_size_override("font_size", 14)
-    hint.add_theme_color_override("font_color", Color("#667384"))
-    menu_panel.add_child(hint)
+    var info := Label.new()
+    info.text = "MOBILE FPS  •  6 MAPS  •  6 WEAPONS"
+    info.position = Vector2(84, 515)
+    info.add_theme_font_size_override("font_size", 14)
+    info.add_theme_color_override("font_color", Color("#657181"))
+    menu_panel.add_child(info)
 
-    var version := Label.new()
-    version.text = "SITF"
-    version.position = Vector2(1730, 1010)
-    version.add_theme_font_size_override("font_size", 14)
-    version.add_theme_color_override("font_color", Color("#586372"))
-    menu_panel.add_child(version)
+    _build_menu_character_ui()
 
 func _build_menu_character_ui():
     var panel := Panel.new()
-    panel.position = Vector2(850, 105)
-    panel.size = Vector2(900, 760)
+    panel.position = Vector2(760, 70)
+    panel.size = Vector2(1080, 850)
     panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    panel.add_theme_stylebox_override("panel", _button_style(Color(0.025,0.035,0.05,0.78), Color("#303b49")))
+    panel.add_theme_stylebox_override("panel", _button_style(Color("#0b1017"), Color("#202a35"), 18))
     menu_panel.add_child(panel)
 
-    var label := Label.new()
-    label.text = "OPERATOR"
-    label.position = Vector2(32, 26)
-    label.add_theme_font_size_override("font_size", 16)
-    label.add_theme_color_override("font_color", Color("#7f8b9a"))
-    panel.add_child(label)
+    var tag := Label.new()
+    tag.text = "OPERATIVE  //  READY"
+    tag.position = Vector2(40, 34)
+    tag.add_theme_font_size_override("font_size", 15)
+    tag.add_theme_color_override("font_color", Color("#d27638"))
+    panel.add_child(tag)
 
-    var shadow := Panel.new()
-    shadow.position = Vector2(322, 630)
-    shadow.size = Vector2(260, 30)
+    var desc := Label.new()
+    desc.text = "SELECT A MISSION TO DEPLOY"
+    desc.position = Vector2(40, 62)
+    desc.add_theme_font_size_override("font_size", 13)
+    desc.add_theme_color_override("font_color", Color("#697685"))
+    panel.add_child(desc)
+
+    # Stylized blocky operator.
+    var shadow := ColorRect.new()
+    shadow.position = Vector2(385, 755)
+    shadow.size = Vector2(310, 20)
+    shadow.color = Color(0,0,0,0.35)
     shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    shadow.add_theme_stylebox_override("panel", _button_style(Color(0.0,0.0,0.0,0.35), Color(0.0,0.0,0.0,0.0)))
     panel.add_child(shadow)
 
-    var body := Panel.new()
-    body.position = Vector2(380, 280)
-    body.size = Vector2(150, 230)
-    body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    body.add_theme_stylebox_override("panel", _button_style(Color("#252e38"), Color("#596574")))
-    panel.add_child(body)
+    var legs := ColorRect.new()
+    legs.position = Vector2(450, 505)
+    legs.size = Vector2(185, 250)
+    legs.color = Color("#202a34")
+    legs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    panel.add_child(legs)
 
-    var vest := Panel.new()
-    vest.position = Vector2(365, 330)
-    vest.size = Vector2(180, 125)
-    vest.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    vest.add_theme_stylebox_override("panel", _button_style(Color("#3c4855"), Color("#7a8794")))
-    panel.add_child(vest)
+    var torso := ColorRect.new()
+    torso.position = Vector2(415, 310)
+    torso.size = Vector2(255, 235)
+    torso.color = Color("#303b48")
+    torso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    panel.add_child(torso)
 
-    var head := Panel.new()
-    head.position = Vector2(407, 170)
-    head.size = Vector2(96, 96)
+    var plate := ColorRect.new()
+    plate.position = Vector2(438, 348)
+    plate.size = Vector2(210, 125)
+    plate.color = Color("#414d5b")
+    plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    panel.add_child(plate)
+
+    var head := ColorRect.new()
+    head.position = Vector2(480, 175)
+    head.size = Vector2(125, 125)
+    head.color = Color("#b86e51")
     head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    head.add_theme_stylebox_override("panel", _button_style(Color("#b66e52"), Color("#6d4033")))
     panel.add_child(head)
 
-    var helmet := Panel.new()
-    helmet.position = Vector2(395, 150)
-    helmet.size = Vector2(120, 38)
+    var helmet := ColorRect.new()
+    helmet.position = Vector2(465, 150)
+    helmet.size = Vector2(155, 48)
+    helmet.color = Color("#111820")
     helmet.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    helmet.add_theme_stylebox_override("panel", _button_style(Color("#11171e"), Color("#596574")))
     panel.add_child(helmet)
 
     for side in [-1, 1]:
-        var arm := Panel.new()
-        arm.position = Vector2(330 if side < 0 else 530, 335)
-        arm.size = Vector2(42, 175)
-        arm.rotation = deg_to_rad(-8.0 * side)
+        var arm := ColorRect.new()
+        arm.position = Vector2(350 if side < 0 else 665, 335)
+        arm.size = Vector2(58, 205)
+        arm.rotation = deg_to_rad(-7.0 * side)
+        arm.color = Color("#293541")
         arm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-        arm.add_theme_stylebox_override("panel", _button_style(Color("#303b46"), Color("#667381")))
         panel.add_child(arm)
 
-        var leg := Panel.new()
-        leg.position = Vector2(390 if side < 0 else 478, 505)
-        leg.size = Vector2(58, 145)
-        leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-        leg.add_theme_stylebox_override("panel", _button_style(Color("#1e2730"), Color("#4c5865")))
-        panel.add_child(leg)
-
-    var rifle := Panel.new()
-    rifle.position = Vector2(500, 385)
-    rifle.size = Vector2(310, 38)
-    rifle.rotation = deg_to_rad(-12.0)
+    var rifle := ColorRect.new()
+    rifle.position = Vector2(585, 385)
+    rifle.size = Vector2(355, 35)
+    rifle.rotation = deg_to_rad(-10.0)
+    rifle.color = Color("#0b0f14")
     rifle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    rifle.add_theme_stylebox_override("panel", _button_style(Color("#0f1318"), Color("#707b87")))
     panel.add_child(rifle)
 
-    var muzzle := Panel.new()
-    muzzle.position = Vector2(794, 330)
-    muzzle.size = Vector2(55, 24)
-    muzzle.rotation = deg_to_rad(-12.0)
-    muzzle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    muzzle.add_theme_stylebox_override("panel", _button_style(Color("#d27638"), Color("#ffb06b")))
-    panel.add_child(muzzle)
+    var barrel := ColorRect.new()
+    barrel.position = Vector2(920, 325)
+    barrel.size = Vector2(62, 24)
+    barrel.rotation = deg_to_rad(-10.0)
+    barrel.color = Color("#d27638")
+    barrel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    panel.add_child(barrel)
 
-    var status := Label.new()
-    status.text = "READY\nMOBILE LOADOUT"
-    status.position = Vector2(40, 660)
-    status.add_theme_font_size_override("font_size", 15)
-    status.add_theme_color_override("font_color", Color("#d27638"))
-    panel.add_child(status)
+    var footer := Label.new()
+    footer.text = "TOUCH CONTROLS  •  VIRTUAL JOYSTICK  •  TOUCH AIM"
+    footer.position = Vector2(40, 795)
+    footer.add_theme_font_size_override("font_size", 13)
+    footer.add_theme_color_override("font_color", Color("#566373"))
+    panel.add_child(footer)
 
 func _show_map_select():
     menu_panel.visible = false
+    selected_map = map_id
     map_select_panel = Panel.new()
     map_select_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     var bg := StyleBoxFlat.new()
-    bg.bg_color = Color("#080b10")
+    bg.bg_color = Color("#070a0f")
     map_select_panel.add_theme_stylebox_override("panel", bg)
     ui.add_child(map_select_panel)
 
     var title := Label.new()
-    title.text = "SELECT MAP"
-    title.position = Vector2(92, 72)
-    title.add_theme_font_size_override("font_size", 46)
-    title.add_theme_color_override("font_color", Color("#edf1f5"))
+    title.text = "SELECT MISSION"
+    title.position = Vector2(90, 62)
+    title.add_theme_font_size_override("font_size", 40)
+    title.add_theme_color_override("font_color", Color("#f0f2f5"))
     map_select_panel.add_child(title)
 
     var sub := Label.new()
-    sub.text = "CHOOSE YOUR DEPLOYMENT"
-    sub.position = Vector2(96, 130)
-    sub.add_theme_font_size_override("font_size", 17)
-    sub.add_theme_color_override("font_color", Color("#7f8b9a"))
+    sub.text = "TAP A MAP TO SELECT IT"
+    sub.position = Vector2(92, 112)
+    sub.add_theme_font_size_override("font_size", 14)
+    sub.add_theme_color_override("font_color", Color("#778392"))
     map_select_panel.add_child(sub)
 
     for i in range(maps.size()):
-        var b := Button.new()
-        b.text = "%02d   %s" % [i + 1, maps[i].name]
-        b.position = Vector2(92 + (i / 3) * 470, 205 + (i % 3) * 150)
-        b.size = Vector2(420, 112)
-        b.add_theme_font_size_override("font_size", 25)
-        b.add_theme_stylebox_override("normal", _button_style(Color("#141a22"), maps[i].accent))
-        b.add_theme_stylebox_override("hover", _button_style(Color("#202a35"), maps[i].accent.lightened(0.2)))
-        b.pressed.connect(func(i=i): _start_match(i))
-        map_select_panel.add_child(b)
+        var col := i % 3
+        var row := i / 3
+        var card := Button.new()
+        card.text = "%02d\n%s" % [i + 1, maps[i].name]
+        card.position = Vector2(90 + col * 440, 185 + row * 205)
+        card.size = Vector2(400, 160)
+        card.add_theme_font_size_override("font_size", 23)
+        card.add_theme_stylebox_override("normal", _button_style(Color("#111821"), maps[i].accent.darkened(0.35), 14))
+        card.add_theme_stylebox_override("hover", _button_style(Color("#1a2430"), maps[i].accent, 14))
+        card.add_theme_stylebox_override("pressed", _button_style(Color("#25313d"), maps[i].accent.lightened(0.15), 14))
+        card.pressed.connect(func(i=i):
+            selected_map = i
+            _refresh_map_selection()
+        )
+        map_select_panel.add_child(card)
+
+    var selected_label := Label.new()
+    selected_label.name = "SelectedMap"
+    selected_label.position = Vector2(90, 620)
+    selected_label.add_theme_font_size_override("font_size", 17)
+    selected_label.add_theme_color_override("font_color", Color("#d27638"))
+    map_select_panel.add_child(selected_label)
+
+    var deploy := Button.new()
+    deploy.name = "Deploy"
+    deploy.text = "DEPLOY  →"
+    deploy.position = Vector2(1320, 845)
+    deploy.size = Vector2(420, 78)
+    deploy.add_theme_font_size_override("font_size", 25)
+    deploy.add_theme_stylebox_override("normal", _button_style(Color("#c94321"), Color("#f07a45"), 12))
+    deploy.add_theme_stylebox_override("hover", _button_style(Color("#e05228"), Color("#ff9a63"), 12))
+    deploy.pressed.connect(func(): _start_match(selected_map))
+    map_select_panel.add_child(deploy)
 
     var back := Button.new()
-    back.text = "BACK"
-    back.position = Vector2(92, 885)
-    back.size = Vector2(210, 60)
-    back.add_theme_font_size_override("font_size", 20)
-    back.add_theme_stylebox_override("normal", _button_style(Color("#11161d"), Color("#566375")))
+    back.text = "← BACK"
+    back.position = Vector2(90, 845)
+    back.size = Vector2(220, 60)
+    back.add_theme_font_size_override("font_size", 18)
+    back.add_theme_stylebox_override("normal", _button_style(Color("#111720"), Color("#3c4857"), 12))
     back.pressed.connect(func():
         map_select_panel.queue_free()
         map_select_panel = null
         menu_panel.visible = true
     )
     map_select_panel.add_child(back)
+    _refresh_map_selection()
+
+func _refresh_map_selection():
+    if map_select_panel == null:
+        return
+    var selected_label = map_select_panel.get_node_or_null("SelectedMap")
+    if selected_label:
+        selected_label.text = "SELECTED  //  %02d  %s" % [selected_map + 1, maps[selected_map].name]
+    for child in map_select_panel.get_children():
+        if child is Button and child.name != "Deploy" and child.name != "Back":
+            var idx := -1
+            for i in range(maps.size()):
+                if child.text == "%02d\n%s" % [i + 1, maps[i].name]:
+                    idx = i
+                    break
+            if idx >= 0:
+                child.add_theme_stylebox_override("normal", _button_style(
+                    Color("#25313d") if idx == selected_map else Color("#111821"),
+                    maps[idx].accent if idx == selected_map else maps[idx].accent.darkened(0.35),
+                    14
+                ))
 
 func _show_settings():
     settings_panel = Panel.new()
@@ -443,15 +516,15 @@ func _show_settings():
     )
     settings_panel.add_child(close)
 
-func _button_style(fill: Color, border: Color) -> StyleBoxFlat:
+func _button_style(fill: Color, border: Color, radius: int = 8) -> StyleBoxFlat:
     var s := StyleBoxFlat.new()
     s.bg_color = fill
     s.border_color = border
     s.set_border_width_all(2)
-    s.corner_radius_top_left = 8
-    s.corner_radius_top_right = 8
-    s.corner_radius_bottom_left = 8
-    s.corner_radius_bottom_right = 8
+    s.corner_radius_top_left = radius
+    s.corner_radius_top_right = radius
+    s.corner_radius_bottom_left = radius
+    s.corner_radius_bottom_right = radius
     return s
 
 func _start_match(selected: int):
@@ -1088,7 +1161,12 @@ func _game_over(victory: bool):
 func _return_to_main_menu():
     _clear_world()
     menu_panel.visible = true
-    _build_menu_character_ui()
+    # Rebuild the menu cleanly instead of stacking duplicate character panels.
+    for child in menu_panel.get_children():
+        child.queue_free()
+    menu_panel.queue_free()
+    menu_panel = null
+    _build_menu()
 
 func _build_audio():
     for i in range(8):
