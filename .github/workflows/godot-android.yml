@@ -67,8 +67,17 @@ jobs:
         working-directory: GodotProject
         run: |
           mkdir -p build
-          godot --headless --path . --editor --quit
-          timeout 8 godot --headless --path . --quit-after 4
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee /tmp/godot-editor.log
+          if grep -Eiq "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-editor.log; then
+            echo "Godot script validation failed."
+            exit 1
+          fi
+          timeout 8 godot --headless --path . --quit-after 4 2>&1 | tee /tmp/godot-runtime.log
+          if grep -Eiq "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-runtime.log; then
+            echo "Godot runtime validation failed."
+            exit 1
+          fi
           godot --headless --path . --export-debug "Android" build/SITF.apk
 
       - name: Verify APK
